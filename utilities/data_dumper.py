@@ -3,9 +3,10 @@ import os
 import numpy as np
 import datetime
 import logging
+from config import DATA_BASE
 
 #DATA_BASE = '/Users/alex/Projects/temp/data_sync/data'
-DATA_BASE = '/home/pi/data'
+#DATA_BASE = '/home/pi/data'
 
 
 def get_now():
