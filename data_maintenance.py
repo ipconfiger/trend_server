@@ -9,12 +9,15 @@ def list_dirs():
         try:
             dt = datetime.datetime.strptime(dir, '%Y-%m-%d')
             days = (datetime.datetime.now() - dt).days
-            print(f'{dir} -> {days}')
+            if days > 6:
+                yield dir
         except:
             pass
 
+
 def main():
-    list_dirs()
+    for dir in list_dirs():
+        print(f'{DATA_BASE}/{dir}')
 
 
 if __name__ == '__main__':
