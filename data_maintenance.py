@@ -1,5 +1,6 @@
 # coding: utf-8
 import datetime
+import shutil
 import os
 from config import DATA_BASE
 
@@ -17,7 +18,8 @@ def list_dirs():
 
 def main():
     for dir in list_dirs():
-        print(f'{DATA_BASE}/{dir}')
+        path = f'{DATA_BASE}{dir}'
+        shutil.rmtree(path, ignore_errors=True)
 
 
 if __name__ == '__main__':
