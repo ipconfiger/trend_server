@@ -1,49 +1,80 @@
 # coding=utf-8
-
-import sqlalchemy
-import uuid
+import expire
+from sqlalchemy import Column, String, Integer, Index, Text, Boolean, BigInteger, Numeric, SmallInteger
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.dialects.postgresql import UUID
 
-metadata = sqlalchemy.MetaData()
-
-tickers = sqlalchemy.Table(
-    "tickers",
-    metadata,
-    sqlalchemy.Column("id", UUID, primary_key=True, default=uuid.uuid1),
-    sqlalchemy.Column("src", sqlalchemy.SmallInteger),
-    sqlalchemy.Column("instType", sqlalchemy.String(16)),
-    sqlalchemy.Column("instId", sqlalchemy.String(32)),
-    sqlalchemy.Column("last", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("lastSz", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("askPx", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("askSz", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("bidPx", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("bidSz", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("open24h", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("high24h", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("low24h", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("volCcy24h", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("vol24h", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("sodUtc0", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("sodUtc8", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("ts", sqlalchemy.BigInteger),
-)
+import uuid
+import time
 
 
-candles = sqlalchemy.Table(
-    "candles",
-    metadata,
-    sqlalchemy.Column("id", UUID, primary_key=True, default=uuid.uuid1),
-    sqlalchemy.Column("src", sqlalchemy.SmallInteger),
-    sqlalchemy.Column("instType", sqlalchemy.String(16)),
-    sqlalchemy.Column("instId", sqlalchemy.String(32)),
-    sqlalchemy.Column("ts", sqlalchemy.BigInteger),
-    sqlalchemy.Column("open", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("high", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("low", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("close", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("vol", sqlalchemy.Numeric(36, 18)),
-    sqlalchemy.Column("volCcy", sqlalchemy.Numeric(36, 18)),
-)
+class ModelBase:
+    @declared_attr
+    def __tablename__(self):
+        return self.__name__.lower()
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
+    # 创建时间
+    create_ts = Column(BigInteger, index=True, default=time.time, nullable=False)
+    # 更新时间
+    update_ts = Column(BigInteger, index=True, default=time.time, nullable=False)
+
+
+# 创建对象的基类:
+Base = declarative_base(cls=ModelBase)
+
+
+class Account(Base):
+    loginId = Column(String(32), unique=True, nullable=False)
+    password = Column(String(70), nullable=False)
+    valid = Column(Boolean)
+
+
+class Token(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    token = Column(String(32), unique=True, nullable=False)
+    expire = Column(Integer, nullable=False, server_default='0')
+
+
+class ExecutionTask(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    product = Column(String(36), nullable=False)
+    startDate = Column(String(10), nullable=False)
+    endDate = Column(String(10), nullable=False)
+    increment = Column(SmallInteger, nullable=False)
+    windowSize = Column(SmallInteger, nullable=False)
+    windowUnit = Column(String(1), nullable=False)
+    processing = Column(Boolean, nullable=False, server_default='0')
+    percentage = Column(SmallInteger, nullable=False, server_default='0')
+    resultId = Column(UUID(as_uuid=True), nullable=True)
+
+
+class ExecutionResult(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    taskId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    windowCount = Column(SmallInteger, nullable=False, server_default='0')
+    successCount = Column(SmallInteger, nullable=False, server_default='0')
+    timeUsed = Column(SmallInteger, nullable=False, server_default='0')
+
+
+class DataWindow(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    taskId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    resultId = Column(UUID(as_uuid=True), index=True, nullable=True)
+    file_path = Column(String(100), nullable=False, server_default='')
+    startIdx = Column(Integer, nullable=False, server_default='0')
+    startVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+    endIdx = Column(Integer, nullable=False, server_default='0')
+    firstIdx = Column(Integer, nullable=False, server_default='0')
+    firstVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+    highestIdx = Column(Integer, nullable=False, server_default='0')
+    highestVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+    lastIdx = Column(Integer, nullable=False, server_default='0')
+    lastVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+
+
+
+
+
 
 

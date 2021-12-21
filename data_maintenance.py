@@ -19,6 +19,7 @@ def list_dirs():
 def main():
     for dir in list_dirs():
         path = f'{DATA_BASE}{dir}'
+        print(f'will delete:{path}')
         shutil.rmtree(path, ignore_errors=True)
 
 
