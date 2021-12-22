@@ -1,5 +1,4 @@
 # coding=utf-8
-import expire
 from sqlalchemy import Column, String, Integer, Index, Text, Boolean, BigInteger, Numeric, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.dialects.postgresql import UUID
