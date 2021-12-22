@@ -46,7 +46,8 @@ async def do_login(form: LoginForm, db: AsyncSession = Depends(get_session)):
     """
     登陆账户
     """
-    account, token = await check_login(db, form.loginId, form.password)
+    logging.error(form)
+    account, token = await check_login(db, form)
     if account is None:
         logging.error(f"鉴权失败")
         raise HTTPException(status_code=403, detail="鉴权失败")

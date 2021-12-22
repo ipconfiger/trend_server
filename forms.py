@@ -32,6 +32,8 @@ class TaskResponse(BaseModel):
 class LoginForm(BaseModel):
     loginId: str
     password: str
+    key: str
+    iv: str
 
 
 class BaseResponse(BaseModel):
