@@ -74736,7 +74736,7 @@ var $async$wc=A.a0(function(c,d){if(c===1)return A.a2(d,r)
 while(true)switch(s){case 0:p=A.amU(u.B,b)
 o=t.N
 s=2
-return A.a7(q.e.aea("/api/login",A.aC(["loginId",a,"password",p.a,"key",p.b,"iv",p.c],o,o),t.z),$async$wc)
+return A.a7(q.e.aea("http://139.198.109.215:18808/api/login",A.aC(["loginId",a,"password",p.a,"key",p.b,"iv",p.c],o,o),t.z),$async$wc)
 case 2:n=d
 if(n.d===200){q.c=J.ad(n.a,"token")
 J.ad(n.a,"expire")}return A.a3(null,r)}})
@@ -74752,7 +74752,7 @@ o=A.amU(u.B,b)
 n=t.N
 m=t.z
 s=2
-return A.a7(q.e.oN("/api/repassword",A.aC(["oldPassword",p.a,"newPassword",o.a,"oldKey",p.b,"oldIv",p.c,"newKey",o.b,"newIv",o.c],n,n),A.td(A.aC(["Authorization",q.nI()],n,m)),m),$async$vI)
+return A.a7(q.e.oN("http://139.198.109.215:18808/api/repassword",A.aC(["oldPassword",p.a,"newPassword",o.a,"oldKey",p.b,"oldIv",p.c,"newKey",o.b,"newIv",o.c],n,n),A.td(A.aC(["Authorization",q.nI()],n,m)),m),$async$vI)
 case 2:return A.a3(null,r)}})
 return A.a4($async$vI,r)},
 uV(a){return this.a8m(a)},
@@ -74761,7 +74761,7 @@ var $async$uV=A.a0(function(b,c){if(b===1)return A.a2(c,r)
 while(true)switch(s){case 0:p=t.N
 o=t.z
 s=2
-return A.a7(q.e.oN("/api/tasks",A.aC(["product",a.b,"startDate",a.c,"endDate",a.d,"increment",a.e,"windowSize",a.f,"windowUnit",a.r],p,p),A.td(A.aC(["Authorization",q.nI()],p,o)),o),$async$uV)
+return A.a7(q.e.oN("http://139.198.109.215:18808/api/tasks",A.aC(["product",a.b,"startDate",a.c,"endDate",a.d,"increment",a.e,"windowSize",a.f,"windowUnit",a.r],p,p),A.td(A.aC(["Authorization",q.nI()],p,o)),o),$async$uV)
 case 2:n=c
 B.c.sn(q.b,0)
 J.eH(J.ad(n.a,"tasks"),new A.aeM(q))
@@ -74772,7 +74772,7 @@ afh(a){var s=0,r=A.a5(t.z),q=this,p
 var $async$rS=A.a0(function(b,c){if(b===1)return A.a2(c,r)
 while(true)switch(s){case 0:p=t.z
 s=2
-return A.a7(q.e.oN("/api/task/"+a+"/run",A.x(p,p),A.td(A.aC(["Authorization",q.nI()],t.N,p)),p),$async$rS)
+return A.a7(q.e.oN("http://139.198.109.215:18808"+("/api/task/"+a+"/run"),A.x(p,p),A.td(A.aC(["Authorization",q.nI()],t.N,p)),p),$async$rS)
 case 2:s=3
 return A.a7(q.l2(),$async$rS)
 case 3:return A.a3(null,r)}})
@@ -74782,7 +74782,7 @@ aas(a){var s=0,r=A.a5(t.z),q=this,p
 var $async$qv=A.a0(function(b,c){if(b===1)return A.a2(c,r)
 while(true)switch(s){case 0:p=t.z
 s=2
-return A.a7(q.e.oN("/api/task/"+a+"/remove",A.x(p,p),A.td(A.aC(["Authorization",q.nI()],t.N,p)),p),$async$qv)
+return A.a7(q.e.oN("http://139.198.109.215:18808"+("/api/task/"+a+"/remove"),A.x(p,p),A.td(A.aC(["Authorization",q.nI()],t.N,p)),p),$async$qv)
 case 2:s=3
 return A.a7(q.l2(),$async$qv)
 case 3:return A.a3(null,r)}})
@@ -74794,7 +74794,7 @@ while(true)switch(s){case 0:p=t.N
 o=A.aC(["startDate",b.c,"endDate",b.d,"increment",b.e,"windowSize",b.f,"windowUnit",b.r],p,p)
 n=t.z
 s=2
-return A.a7(q.e.oN("/api/task/"+a+"/update",o,A.td(A.aC(["Authorization",q.nI()],p,n)),n),$async$t0)
+return A.a7(q.e.oN("http://139.198.109.215:18808"+("/api/task/"+a+"/update"),o,A.td(A.aC(["Authorization",q.nI()],p,n)),n),$async$t0)
 case 2:s=3
 return A.a7(q.l2(),$async$t0)
 case 3:return A.a3(null,r)}})
@@ -74803,7 +74803,7 @@ l2(){var s=0,r=A.a5(t.z),q=this,p,o
 var $async$l2=A.a0(function(a,b){if(a===1)return A.a2(b,r)
 while(true)switch(s){case 0:p=t.z
 s=2
-return A.a7(q.e.aeR(0,"/api/tasks",null,null,A.atn("GET",A.td(A.aC(["Authorization",q.nI()],t.N,p))),null,p),$async$l2)
+return A.a7(q.e.aeR(0,"http://139.198.109.215:18808/api/tasks",null,null,A.atn("GET",A.td(A.aC(["Authorization",q.nI()],t.N,p))),null,p),$async$l2)
 case 2:o=b
 B.c.sn(q.b,0)
 J.eH(J.ad(o.a,"tasks"),new A.aeN(q))
