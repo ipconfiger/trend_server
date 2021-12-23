@@ -1,6 +1,6 @@
 import click
 import asyncio
-from authorization import create_account, account_list, delete_account
+from authorization import create_account, account_list
 
 
 @click.group()
@@ -24,16 +24,6 @@ def list_account():
     async def main():
         await account_list()
     asyncio.run(main())
-
-
-@cli.command()
-@click.argument('login_id')
-def del_account(login_id):
-    delete_account(login_id)
-    click.echo('done')
-    click.echo('rest account is below:')
-    for ac in account_list():
-        click.echo(f'{ac}')
 
 
 if __name__ == "__main__":
