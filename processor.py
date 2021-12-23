@@ -3,9 +3,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_sugar import select, delete
 
-from database import DbWrapper
-from forms import TaskForm, TaskItem
-from models import ExecutionTask, Account
+from database import SyncDbWrapper
+from forms import TaskForm, TaskItem, EditTaskForm
+from models import ExecutionTask, Account, ExecutionResult
 from uuid import UUID
 
 
@@ -24,14 +24,37 @@ async def add_new_task(db: AsyncSession, form: TaskForm, user: Account):
     return await task_list(db, user)
 
 
-def fromatResult(task: ExecutionTask):
+async def edit_task_by_id(db: AsyncSession, task_id: str, form: EditTaskForm, user: Account):
+    """
+    修改任务属性，方便重新算
+    """
+    executionTask = await db.get(ExecutionTask, UUID(task_id))
+    if executionTask.accountId != user.id:
+        return
+    executionTask.startDate = form.startDate
+    executionTask.endDate = form.endDate
+    executionTask.increment = int(form.increment)
+    executionTask.windowSize = int(form.windowSize)
+    executionTask.windowUnit = form.windowUnit
+    await db.flush()
+
+
+async def fromatResult(db: AsyncSession, task: ExecutionTask):
     if task.percentage < 100:
         if task.percentage > 0:
             return f"执行中：{task.percentage} % ..."
         else:
-            return "未开始"
+            if task.percentage<0:
+                errorMap = {
+                    -404: '数据文件缺失，请检查有选择日期的数据'
+                }
+                return errorMap[task.percentage]
+            else:
+                return "未开始"
     else:
-        return "执行完毕  "
+        executionResult = await db.get(ExecutionResult, task.resultId)
+
+        return f'共{executionResult.windowCount}/成功{executionResult.successCount} 成功率:{int(executionResult.successCount * 100 / executionResult.windowCount)}%'
 
 
 async def task_list(db: AsyncSession, user: Account):
@@ -46,7 +69,7 @@ async def task_list(db: AsyncSession, user: Account):
             TaskItem(taskId='%s' % task.id, product=task.product, startDate=task.startDate, endDate=task.endDate,
                      increment=task.increment,
                      windowSize=task.windowSize, windowUnit=task.windowUnit, processing=task.processing,
-                     percentage=task.percentage, resultId=fromatResult(task)))
+                     percentage=task.percentage, resultId=await fromatResult(db, task)))
     return task_items
 
 
@@ -61,7 +84,7 @@ async def execute_task(db: AsyncSession, user: Account, task_id: str):
     task.percentage = 0
 
 
-async def remove_task(db: AsyncSession, user: Account, task_id: str):
+async def delete_exist_task(db: AsyncSession, user: Account, task_id: str):
     """
     移除任务
     """
@@ -73,28 +96,27 @@ async def remove_task(db: AsyncSession, user: Account, task_id: str):
     await db.delete(task)
 
 
-async def get_stanby_task():
+def get_stanby_task():
     """
     获取可以执行的任务
     """
-    async with DbWrapper() as db:
-        task = await select(ExecutionTask).where(ExecutionTask.processing == True,
-                                                 ExecutionTask.percentage < 1,
-                                                 ).order_by(ExecutionTask.create_ts.asc()).first(db)
+    with SyncDbWrapper() as db:
+        task = db.query(ExecutionTask).filter(ExecutionTask.processing == True,
+                                              ExecutionTask.percentage < 1,
+                                              ).order_by(ExecutionTask.create_ts.asc()).first()
         if task:
             task.percentage = 1
             return task
 
 
-async def update_task_percentage(task_id: UUID, percentage: int, resultId: UUID):
+def update_task_percentage(db, task_id: UUID, percentage: int, resultId: UUID):
     """
     更新任务的执行进度
     """
-    async with DbWrapper() as db:
-        executionTask = await db.get(ExecutionTask, task_id)
-        executionTask.percentage = percentage
-        if percentage > 99:
-            executionTask.processing = False
-            executionTask.resultId = resultId
+    executionTask = db.query(ExecutionTask).get(task_id)
+    executionTask.percentage = percentage
+    if percentage > 99:
+        executionTask.processing = False
+        executionTask.resultId = resultId
 
 

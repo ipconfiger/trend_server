@@ -2,31 +2,73 @@
 
 import asyncio
 import time
-from models import ExecutionTask
+
+from config import DATA_BASE
+from database import SyncDbWrapper
+from models import ExecutionTask, ExecutionResult, DataWindow
 from processor import get_stanby_task, update_task_percentage
-from uuid import uuid4
 from random import randint
+import numpy as np
+
+from utilities.data_processor import date_range, data_file_path, proccess_oneday, save_window, init_plt, reinit_plt
 
 
-async def execution(task: ExecutionTask):
-    for i in range(100):
-        percent = i + 1
-        time.sleep(0.5)
-        print(f'{percent}% executed!')
-        await update_task_percentage(task.id, percent, uuid4())
+def execution(task: ExecutionTask):
+    dates = date_range(task.startDate, task.endDate)
+    total = len(dates)
+    startTs = int(time.time() * 1000)
+    init_plt()
+    with SyncDbWrapper() as db:
+        if task.resultId:
+            db.query(ExecutionResult).filter(ExecutionResult.id == task.resultId).delete()
+            db.query(DataWindow).filter(DataWindow.taskId == task.id).delete()
+            db.flush()
+        executionResult = ExecutionResult(accountId=task.accountId, taskId=task.id)
+        db.add(executionResult)
+        db.flush()
+        idx = 0
+        for date_str in dates:
+            path = DATA_BASE + data_file_path(task.product, date_str)
+            try:
+                data = np.load(path)
+            except FileNotFoundError as fe:
+                print(f'error:{fe}')
+                task = db.query(ExecutionTask).get(task.id)
+                task.processing = False
+                task.percentage = -404
+                db.query(DataWindow).filter(DataWindow.resultId == executionResult.id).delete()
+                db.query(ExecutionResult).filter(ExecutionResult.id == executionResult.id).delete()
+                db.flush()
+                db.commit()
+                print('exit task execution')
+                return
+            result = proccess_oneday(task.id, data, date_str, task.increment, task.windowSize, task.windowUnit)
+            executionResult.windowCount = executionResult.windowCount + result.windowCount
+            executionResult.successCount = executionResult.successCount + result.successCount
+            for window in result.windows:
+                save_window(db, task, window, executionResult)
+            idx += 1
+            update_task_percentage(db, task.id, int(idx*100.0/total), executionResult.id)
+            db.flush()
+            db.commit()
+            reinit_plt()
+        endTs = int(time.time() * 1000)
+        executionResult.timeUsed = endTs - startTs
+        db.flush()
+        db.commit()
 
 
-async def async_main():
+def sync_main():
     while True:
-        executionTask = await get_stanby_task()
+        executionTask = get_stanby_task()
         if executionTask:
-            await execution(executionTask)
+            execution(executionTask)
         else:
             time.sleep(randint(2, 5))
 
 
 def main():
-    asyncio.run(async_main())
+    sync_main()
 
 
 if __name__ == '__main__':

@@ -1,8 +1,9 @@
 import logging
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncResult
 from sqlalchemy.orm import sessionmaker
 from functools import wraps
-from config import DB_URI
+from config import DB_URI, DB_URI2
 from sqlalchemy.sql.dml import Update
 from sqlalchemy.util.langhelpers import public_factory
 
@@ -40,6 +41,23 @@ class DbWrapper(object):
         else:
             await self.db.commit()
         await self.db.close()
+
+
+class SyncDbWrapper(object):
+    sync_engin = create_engine(DB_URI2)
+    SyncSession = sessionmaker(bind=sync_engin, expire_on_commit=False, autocommit=False, autoflush=True)
+
+    def __enter__(self):
+        self.db = SyncDbWrapper.SyncSession()
+        return self.db
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_val:
+            self.db.rollback()
+            logging.error(f'<{exc_type}>{exc_val}:{exc_tb}')
+        else:
+            self.db.commit()
+        self.db.close()
 
 
 class SessionWrapper(object):

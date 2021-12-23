@@ -6,7 +6,7 @@ import json
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import DbWrapper, update
-from forms import LoginForm
+from forms import LoginForm, ChangePasswordForm
 from json_persisted import JsonDatabase
 from sqlalchemy_sugar import select, delete
 from hashlib import sha256
@@ -69,6 +69,11 @@ async def account_list():
             print(f'{account.loginId}: {account.valid}')
 
 
-def delete_account(loginId: str):
-    with JsonDatabase('login') as db:
-        db.rem(loginId, Account)
+async def change_password(db: AsyncSession, user: Account, form: ChangePasswordForm):
+    raw_old = decrypt_password(form.oldPassword, form.oldKey, form.oldIv)
+    raw_new = decrypt_password(form.newPassword, form.newKey, form.newIv)
+    if verify_password(user.password, raw_old):
+        user.password = gen_password(raw_new)
+        return True
+    else:
+        return False

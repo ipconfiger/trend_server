@@ -12,6 +12,14 @@ class TaskForm(BaseModel):
     windowUnit: str
 
 
+class EditTaskForm(BaseModel):
+    startDate: str
+    endDate: str
+    increment: int
+    windowSize: int
+    windowUnit: str
+
+
 class TaskItem(BaseModel):
     taskId: str
     product: str
@@ -34,6 +42,15 @@ class LoginForm(BaseModel):
     password: str
     key: str
     iv: str
+
+
+class ChangePasswordForm(BaseModel):
+    oldPassword: str
+    newPassword: str
+    oldKey: str
+    oldIv: str
+    newKey: str
+    newIv: str
 
 
 class BaseResponse(BaseModel):

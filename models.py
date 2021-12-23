@@ -60,17 +60,20 @@ class DataWindow(Base):
     accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
     taskId = Column(UUID(as_uuid=True), index=True, nullable=False)
     resultId = Column(UUID(as_uuid=True), index=True, nullable=True)
+    date = Column(String(10), nullable=False, server_default='')
     file_path = Column(String(100), nullable=False, server_default='')
     startIdx = Column(Integer, nullable=False, server_default='0')
+    startTs = Column(BigInteger, nullable=False, server_default='0')
     startVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
-    endIdx = Column(Integer, nullable=False, server_default='0')
     firstIdx = Column(Integer, nullable=False, server_default='0')
     firstVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+    firstTs = Column(BigInteger, nullable=False, server_default='0')
     highestIdx = Column(Integer, nullable=False, server_default='0')
     highestVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
+    highestTs = Column(BigInteger, nullable=False, server_default='0')
     lastIdx = Column(Integer, nullable=False, server_default='0')
     lastVal = Column(Numeric(26, 18), nullable=False, server_default='0.0')
-
+    lastTs = Column(BigInteger, nullable=False, server_default='0')
 
 
 
