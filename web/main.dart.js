@@ -78252,7 +78252,7 @@ S0(a,b,c){var s=0,r=A.a2(t.Cm),q,p=this,o
 var $async$tJ=A.Z(function(d,e){if(d===1)return A.a_(e,r)
 while(true)switch(s){case 0:o=Date.now()
 s=3
-return A.a6(p.r.xO(0,"http://127.0.0.1:8000/api/task/"+a+"/"+b+"/"+c+"/csv?ts="+o,A.nz(null,B.eP),t.z),$async$tJ)
+return A.a6(p.r.xO(0,"http://139.198.109.215:18808/api/task/"+a+"/"+b+"/"+c+"/csv?ts="+o,A.nz(null,B.eP),t.z),$async$tJ)
 case 3:q=e.a
 s=1
 break
@@ -78636,11 +78636,11 @@ A.aqa(A.ate(a,t.S),this.a.db+"-"+s.a+"-"+s.cy+".csv")},
 $S:620}
 A.a0H.prototype={
 $0(){var s=$.b2(),r=this.b,q=Date.now()
-A.yw(s,null,A.dE(A.qn(A.qn(A.axH(new A.pO("http://127.0.0.1:8000/api/task/"+this.a.db+"/"+r.a+"/"+r.cy+"/img?ts="+q)),null,B.N),null,B.a1),600,800),"Alert",t.z)},
+A.yw(s,null,A.dE(A.qn(A.qn(A.axH(new A.pO("http://139.198.109.215:18808/api/task/"+this.a.db+"/"+r.a+"/"+r.cy+"/img?ts="+q)),null,B.N),null,B.a1),600,800),"Alert",t.z)},
 $S:0}
 A.a0I.prototype={
 $0(){var s=$.b2(),r=Date.now()
-A.yw(s,null,A.dE(A.qn(A.qn(A.axH(new A.pO("http://127.0.0.1:8000/api/task/"+this.a.db+"/"+this.b.a+"/img?ts="+r)),null,B.N),null,B.a1),600,800),"Alert",t.z)},
+A.yw(s,null,A.dE(A.qn(A.qn(A.axH(new A.pO("http://139.198.109.215:18808/api/task/"+this.a.db+"/"+this.b.a+"/img?ts="+r)),null,B.N),null,B.a1),600,800),"Alert",t.z)},
 $S:0}
 A.oW.prototype={
 aeD(a){var s=t.P
