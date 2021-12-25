@@ -1,11 +1,13 @@
 # coding: utf-8
 
+import io
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_sugar import select, delete
 
+from config import STATIC_BASE
 from database import SyncDbWrapper
-from forms import TaskForm, TaskItem, EditTaskForm
-from models import ExecutionTask, Account, ExecutionResult
+from forms import TaskForm, TaskItem, EditTaskForm, DetailResponse, ResultItem, WindowItem
+from models import ExecutionTask, Account, ExecutionResult, DataWindow
 from uuid import UUID
 
 
@@ -37,6 +39,46 @@ async def edit_task_by_id(db: AsyncSession, task_id: str, form: EditTaskForm, us
     executionTask.windowSize = int(form.windowSize)
     executionTask.windowUnit = form.windowUnit
     await db.flush()
+
+
+async def task_details_by_id(db: AsyncSession, task_id: str):
+    """
+     任务详情
+    """
+    task = await db.get(ExecutionTask, UUID(task_id))
+    executionResult = await db.get(ExecutionResult, task.resultId)
+    windows = await select(DataWindow).where(DataWindow.resultId == executionResult.id).scalars(db)
+    return DetailResponse(code=200, task=TaskItem(
+        taskId="%s" % task.id,
+        product=task.product,
+        startDate=task.startDate,
+        endDate=task.endDate,
+        increment=task.increment,
+        windowSize=task.windowSize,
+        windowUnit=task.windowUnit,
+        processing=task.processing,
+        percentage=task.percentage,
+        resultId=''
+    ), result=ResultItem(
+        windowCount=executionResult.windowCount,
+        successCount=executionResult.successCount,
+        timeUsed=executionResult.eslapshed,
+        windows=[WindowItem(
+            date=dataWindow.date,
+            startIdx=dataWindow.startIdx,
+            startTs=dataWindow.startTs,
+            startVal=dataWindow.startVal,
+            firstIdx=dataWindow.firstIdx,
+            firstVal=dataWindow.firstVal,
+            firstTs=dataWindow.firstTs,
+            highestIdx=dataWindow.highestIdx,
+            highestVal=dataWindow.highestVal,
+            highestTs=dataWindow.highestTs,
+            lastIdx=dataWindow.lastIdx,
+            lastVal=dataWindow.lastVal,
+            lastTs=dataWindow.lastTs,
+        ) for dataWindow in windows]
+    ))
 
 
 async def fromatResult(db: AsyncSession, task: ExecutionTask):
@@ -119,4 +161,27 @@ def update_task_percentage(db, task_id: UUID, percentage: int, resultId: UUID):
         executionTask.processing = False
         executionTask.resultId = resultId
 
+
+def task_daily_image_file(task_id: str, date: str):
+    """
+    读取任务某日期的图片
+    """
+    with open(fr'{STATIC_BASE}/day/{task_id}-{date}.jpg', 'rb') as f:
+        return io.BytesIO(f.read())
+
+
+def task_daily_window_image_file(task_id: str, date: str, idx: str):
+    """
+    读取任务某日期的图片
+    """
+    with open(fr'{STATIC_BASE}/window/{task_id}-{date}-{idx}.jpg', 'rb') as f:
+        return io.BytesIO(f.read())
+
+
+def task_daily_window_csv_file(task_id: str, date: str, idx: str):
+    """
+    读取任务某日期的CSV文件
+    """
+    with open(fr'{STATIC_BASE}/window/{task_id}-{date}-{idx}.csv', 'rb') as f:
+        return io.BytesIO(f.read())
 

@@ -3,6 +3,7 @@ import logging
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from starlette.responses import StreamingResponse
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,7 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import datetime
 
 from forms import LoginResponse, LoginForm, TaskResponse, TaskForm, BaseResponse, ChangePasswordForm, EditTaskForm
-from processor import add_new_task, task_list, execute_task, delete_exist_task, edit_task_by_id
+from processor import add_new_task, task_list, execute_task, delete_exist_task, edit_task_by_id, task_details_by_id, \
+    task_daily_image_file, task_daily_window_image_file, task_daily_window_csv_file
 
 app = FastAPI()
 security = HTTPBasic()
@@ -63,6 +65,8 @@ async def new_task(form: TaskForm,
     创建新的任务
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     tasks = await add_new_task(db, form, account)
     return TaskResponse(tasks=tasks)
 
@@ -74,6 +78,8 @@ async def tasks(db: AsyncSession = Depends(get_session),
     任务列表
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     tasks = await task_list(db, account)
     return TaskResponse(tasks=tasks)
 
@@ -85,6 +91,8 @@ async def run_task(task_id: str, db: AsyncSession = Depends(get_session),
     执行任务
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     await execute_task(db, account, task_id)
     return BaseResponse(code=200)
 
@@ -96,6 +104,8 @@ async def remove_task(task_id: str, db: AsyncSession = Depends(get_session),
     删除任务
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     await delete_exist_task(db, account, task_id)
     return BaseResponse(code=200)
 
@@ -106,8 +116,21 @@ async def update_task(task_id: str, form: EditTaskForm, db: AsyncSession = Depen
     更新任务
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     await edit_task_by_id(db, task_id, form, account)
     return BaseResponse(code=200)
+
+
+@app.get('/api/task/{task_id}')
+async def task_details(task_id: str, db: AsyncSession = Depends(get_session), credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    获取任务详情
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    return await task_details_by_id(db, task_id)
 
 
 @app.post('/api/repassword', response_model=BaseResponse)
@@ -117,7 +140,34 @@ async def change_my_password(form: ChangePasswordForm, db: AsyncSession = Depend
     修改密码
     """
     account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
     success = await change_password(db, account, form)
     if success:
         return BaseResponse(code=200)
     raise HTTPException(status_code=500, detail="验证当前密码失败")
+
+
+@app.get('/api/task/{task_id}/{date}/img')
+async def task_daily_image(task_id: str, date: str):
+    """
+    获取任务每日图片
+    """
+    return StreamingResponse(task_daily_image_file(task_id, date), media_type="image/jpeg")
+
+
+@app.get('/api/task/{task_id}/{date}/{idx}/img')
+async def task_daily_window_image(task_id: str, date: str, idx: str):
+    """
+    获取任务每日图片
+    """
+    return StreamingResponse(task_daily_window_image_file(task_id, date, idx), media_type="image/jpeg")
+
+
+@app.get('/api/task/{task_id}/{date}/{idx}/csv')
+async def task_daily_window_csv(task_id: str, date: str, idx: str):
+    """
+    获取任务每个window的CSV
+    """
+    return StreamingResponse(task_daily_window_csv_file(task_id, date, idx), media_type="text/csv")
+

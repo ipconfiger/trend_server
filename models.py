@@ -53,7 +53,7 @@ class ExecutionResult(Base):
     taskId = Column(UUID(as_uuid=True), index=True, nullable=False)
     windowCount = Column(SmallInteger, nullable=False, server_default='0')
     successCount = Column(SmallInteger, nullable=False, server_default='0')
-    timeUsed = Column(SmallInteger, nullable=False, server_default='0')
+    eslapshed = Column(Integer, nullable=False, server_default='0')
 
 
 class DataWindow(Base):

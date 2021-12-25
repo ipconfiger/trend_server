@@ -3,6 +3,7 @@ import time
 import uuid
 import base64
 import json
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import DbWrapper, update
@@ -18,7 +19,10 @@ PRIVATE_KEY = '4e0f34016ef686e64dd7c3bbad138658abd94d52c65b438669f98c51149228e1'
 
 
 def decrypt_password(enc_password, key, iv):
-    return secp256k1.PrivateKey.restore(PRIVATE_KEY).decrypt(secp256k1.PublicKey.restore(key), enc_password, iv)
+    try:
+        return secp256k1.PrivateKey.restore(PRIVATE_KEY).decrypt(secp256k1.PublicKey.restore(key), enc_password, iv)
+    except:
+        return None
 
 
 def gen_password(password: str):

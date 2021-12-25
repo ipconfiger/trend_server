@@ -13,6 +13,16 @@ import numpy as np
 from utilities.data_processor import date_range, data_file_path, proccess_oneday, save_window, init_plt, reinit_plt
 
 
+def clear():
+    with SyncDbWrapper() as db:
+        for task in db.query(ExecutionTask).filter(ExecutionTask.processing == True):
+            if task.resultId:
+                db.query(ExecutionResult).filter(ExecutionResult.id == task.resultId).delete()
+                db.query(DataWindow).filter(DataWindow.taskId == task.id).delete()
+            task.processing = False
+            task.percentage = 0
+
+
 def execution(task: ExecutionTask):
     dates = date_range(task.startDate, task.endDate)
     total = len(dates)
@@ -53,18 +63,19 @@ def execution(task: ExecutionTask):
             db.commit()
             reinit_plt()
         endTs = int(time.time() * 1000)
-        executionResult.timeUsed = endTs - startTs
+        executionResult.eslapshed = endTs - startTs
         db.flush()
         db.commit()
 
 
 def sync_main():
+    clear()
     while True:
         executionTask = get_stanby_task()
         if executionTask:
             execution(executionTask)
         else:
-            time.sleep(randint(2, 5))
+            time.sleep(1)
 
 
 def main():

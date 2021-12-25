@@ -61,3 +61,31 @@ class BaseResponse(BaseModel):
 class LoginResponse(BaseResponse):
     token: str
     expire: int
+
+
+class WindowItem(BaseModel):
+    date: str
+    startIdx: int
+    startTs: int
+    startVal: float
+    firstIdx: int
+    firstVal: float
+    firstTs: int
+    highestIdx: int
+    highestVal: float
+    highestTs: int
+    lastIdx: int
+    lastVal: float
+    lastTs: int
+
+
+class ResultItem(BaseModel):
+    windowCount: int
+    successCount: int
+    timeUsed: int
+    windows: List[WindowItem]
+
+
+class DetailResponse(BaseResponse):
+    task: TaskItem
+    result: ResultItem

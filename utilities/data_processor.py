@@ -58,6 +58,10 @@ def data_file_path(product, date_str):
     return f'{date_str}/{product}-tickers.npy'
 
 
+def tickerTime(ts):
+    return datetime.datetime.fromtimestamp(int(ts / 1000)).strftime('%H:%M:%S')
+
+
 def comput_window(arr, increment):
     origin_v = arr[0][1]
     level_flag = origin_v * (100 + Decimal(increment)) / 100
@@ -132,12 +136,13 @@ def cut(arr, start_idx, increment, window_size, window_unit):
 
 def draw_window(arr, color):
     plt.title("Window")
-    plt.xlabel("时")
-    plt.ylabel("值")
+    plt.xlabel("TIME")
+    plt.ylabel("VALUE")
     x = [datetime.datetime.fromtimestamp(int(ts / 1000)) for ts, _ in arr]
     y = [v for _, v in arr]
     max_y = max(y)
     min_y = min(y)
+    plt.xlim(x[0], x[-1])
     plt.ylim(min_y * Decimal("0.95"), max_y * Decimal("1.1"))
     plt.plot_date(x, y, color=color, linewidth=0.5, linestyle='solid', marker=',')
     return max_y / Decimal("10.0")
@@ -150,14 +155,73 @@ def draw_stack_window(arr, color, window, scale):
     plt.scatter(datetime.datetime.fromtimestamp(window.first_ts / 1000), window.first_val, )
     plt.scatter(datetime.datetime.fromtimestamp(window.highest_ts / 1000), window.highest_val, )
     plt.scatter(datetime.datetime.fromtimestamp(window.last_ts / 1000), window.last_val, )
-    plt.text(datetime.datetime.fromtimestamp(window.first_ts / 1000), window.first_val + scale, '%s' % window.first_val,
-             va='top', ha='center')
-    plt.text(datetime.datetime.fromtimestamp(window.highest_ts / 1000), window.highest_val + scale,
-             '%s' % window.highest_val, va='top', ha='center')
-    plt.text(datetime.datetime.fromtimestamp(window.last_ts / 1000), window.last_val + scale, '%s' % window.last_val,
+    plt.text(datetime.datetime.fromtimestamp(window.first_ts / 1000), window.first_val + scale,
+             '%s(%s)' % (window.first_val, tickerTime(window.first_ts)),
              va='top', ha='center')
     plt.plot_date([dt, datetime.datetime.fromtimestamp(window.first_ts / 1000)], [window.first_val, window.first_val],
                   linestyle='--', c='b')
+    plt.plot_date([datetime.datetime.fromtimestamp(window.first_ts / 1000),
+                   datetime.datetime.fromtimestamp(window.first_ts / 1000)],
+                  [window.first_val, window.first_val + (Decimal(scale - 0.1))],
+                  linestyle='--', c='b')
+
+
+def draw_single_window(arr, window, file_path=''):
+    reinit_plt(sub=True)
+    plt.title("Window")
+    plt.xlabel("TIME")
+    plt.ylabel("VALUE")
+    x = [datetime.datetime.fromtimestamp(int(ts / 1000)) for ts, _ in arr]
+    print(f'w-{x[0]}')
+    y = [v for _, v in arr]
+    max_y = max(y)
+    min_y = min(y)
+    plt.xlim(x[0], x[-1])
+    plt.ylim(min_y * Decimal("0.95"), max_y * Decimal("1.1"))
+    plt.plot_date(x, y, color='k', linewidth=0.5, linestyle='solid', marker=',')
+    tmp = datetime.datetime.fromtimestamp(window.init_ts / 1000)
+    dt = datetime.datetime(tmp.year, tmp.month, tmp.day, 0, 0, 0)
+    plt.scatter(datetime.datetime.fromtimestamp(window.first_ts / 1000), window.first_val, )
+    plt.scatter(datetime.datetime.fromtimestamp(window.highest_ts / 1000), window.highest_val, )
+    plt.scatter(datetime.datetime.fromtimestamp(window.last_ts / 1000), window.last_val, )
+
+    plt.text(datetime.datetime.fromtimestamp(window.first_ts / 1000), window.first_val + 1,
+             'F:%s(%s)' % (window.first_val, tickerTime(window.first_ts)),
+             va='top', ha='center')
+
+    plt.text(datetime.datetime.fromtimestamp(window.highest_ts / 1000), window.highest_val + Decimal(1.2),
+             'H:%s(%s)' % (window.highest_val, tickerTime(window.highest_ts)),
+             va='top', ha='center')
+
+    plt.text(datetime.datetime.fromtimestamp(window.last_ts / 1000), window.last_val + Decimal(1.4),
+             'L:%s(%s)' % (window.last_val, tickerTime(window.last_ts)),
+             va='top', ha='center')
+
+    plt.plot_date([dt, datetime.datetime.fromtimestamp(window.first_ts / 1000)], [window.first_val, window.first_val],
+                  linestyle='--', c='b')
+    plt.plot_date([datetime.datetime.fromtimestamp(window.first_ts / 1000),
+                   datetime.datetime.fromtimestamp(window.first_ts / 1000)],
+                  [window.first_val, window.first_val + Decimal(0.9)],
+                  linestyle='--', c='b')
+
+    plt.plot_date([dt, datetime.datetime.fromtimestamp(window.highest_ts / 1000)], [window.highest_val, window.highest_val],
+                  linestyle='--', c='b')
+    plt.plot_date([datetime.datetime.fromtimestamp(window.highest_ts / 1000),
+                   datetime.datetime.fromtimestamp(window.highest_ts / 1000)],
+                  [window.highest_val, window.highest_val + Decimal(1.1)],
+                  linestyle='--', c='b')
+
+    plt.plot_date([dt, datetime.datetime.fromtimestamp(window.last_ts / 1000)], [window.last_val, window.last_val],
+                  linestyle='--', c='b')
+    plt.plot_date([datetime.datetime.fromtimestamp(window.last_ts / 1000),
+                   datetime.datetime.fromtimestamp(window.last_ts / 1000)],
+                  [window.last_val, window.last_val + Decimal(1.3)],
+                  linestyle='--', c='b')
+    plt.savefig(file_path, bbox_inches='tight')
+    csv_file = file_path[:-4] + '.csv'
+    csv_text = "\n".join([f"{ts},{v}" for ts, v in arr])
+    with open(csv_file, 'w', encoding='utf8') as f:
+        f.write(csv_text)
 
 
 def save_window(db: AsyncSession, task: ExecutionTask, window: Window, result: ExecutionResult):
@@ -217,24 +281,35 @@ def proccess_oneday(taskId, data, date, increment: int, window_size: int, window
             # print(f'Next start: {end_idx}')
         if os_start == end_idx:
             break
-    plt.tick_params(top='off', right='off')
+    plt.tick_params(left='off', right='off')
     filePath = os.path.join(STATIC_BASE, 'day', f'{taskId}-{date}.jpg')
-    plt.savefig(filePath)
+    plt.savefig(filePath, bbox_inches='tight')
+    for idx, w in enumerate(result.windows):
+        draw_single_window(arr[w.init_idx: w.last_idx + 20 if w.last_idx < len(arr)-20 else len(arr)-1], w, file_path=os.path.join(STATIC_BASE, 'window', f'{taskId}-{date}-{idx}.jpg'))
     print(f"Result: w:{result.windowCount} success:{result.successCount}")
     return result
 
 
 def init_plt():
-    plt.figure(figsize=(90, 20), dpi=160)
+    plt.figure(figsize=(45, 10), dpi=80)
 
 
-def reinit_plt():
+def init_plt2():
+    plt.figure(figsize=(30, 8), dpi=80)
+
+
+def reinit_plt(sub=False):
+    plt.close()
+    plt.cla()
     plt.clf()
-    init_plt()
+    if sub:
+        init_plt2()
+    else:
+        init_plt()
 
 
 def main():
-    plt.figure(figsize=(90, 20), dpi=160)
+    plt.figure(figsize=(45, 10), dpi=80)
     date = '2021-12-18'
     path = '/Users/alex/Projects/temp/trend_data/data/' + data_file_path('ZEC-USDT', date)
     data = np.load(path)
