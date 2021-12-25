@@ -1,13 +1,11 @@
 # coding: utf-8
 
-import asyncio
 import time
-
+import logging
 from config import DATA_BASE
 from database import SyncDbWrapper
 from models import ExecutionTask, ExecutionResult, DataWindow
 from processor import get_stanby_task, update_task_percentage
-from random import randint
 import numpy as np
 
 from utilities.data_processor import date_range, data_file_path, proccess_oneday, save_window, init_plt, reinit_plt
@@ -42,7 +40,7 @@ def execution(task: ExecutionTask):
             try:
                 data = np.load(path)
             except FileNotFoundError as fe:
-                print(f'error:{fe}')
+                logging.error('load data:%s error', path)
                 task = db.query(ExecutionTask).get(task.id)
                 task.processing = False
                 task.percentage = -404
