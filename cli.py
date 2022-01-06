@@ -27,6 +27,7 @@ def list_account():
 
 
 @cli.command()
+@click.argument('login_id')
 def reset_user_password(login_id):
     async def main():
         await reset_password(login_id)
