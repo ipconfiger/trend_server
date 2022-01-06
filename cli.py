@@ -1,6 +1,6 @@
 import click
 import asyncio
-from authorization import create_account, account_list
+from authorization import create_account, account_list, reset_password
 
 
 @click.group()
@@ -23,6 +23,13 @@ def new_account(login_id, password):
 def list_account():
     async def main():
         await account_list()
+    asyncio.run(main())
+
+
+@cli.command()
+def reset_user_password(login_id):
+    async def main():
+        await reset_password(login_id)
     asyncio.run(main())
 
 
