@@ -13,9 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import datetime
 
-from forms import LoginResponse, LoginForm, TaskResponse, TaskForm, BaseResponse, ChangePasswordForm, EditTaskForm
+from forms import LoginResponse, LoginForm, TaskResponse, TaskForm, BaseResponse, ChangePasswordForm, EditTaskForm, \
+    TaskShareResponse, TaskImportForm
 from processor import add_new_task, task_list, execute_task, delete_exist_task, edit_task_by_id, task_details_by_id, \
-    task_daily_image_file, task_daily_window_image_file, task_daily_window_csv_file
+    task_daily_image_file, task_daily_window_image_file, task_daily_window_csv_file, fork_task_request, \
+    fork_task_execute
 
 app = FastAPI()
 security = HTTPBasic()
@@ -111,7 +113,8 @@ async def remove_task(task_id: str, db: AsyncSession = Depends(get_session),
 
 
 @app.post('/api/task/{task_id}/update', response_model=BaseResponse)
-async def update_task(task_id: str, form: EditTaskForm, db: AsyncSession = Depends(get_session), credentials: HTTPBasicCredentials = Depends(security)):
+async def update_task(task_id: str, form: EditTaskForm, db: AsyncSession = Depends(get_session),
+                      credentials: HTTPBasicCredentials = Depends(security)):
     """
     更新任务
     """
@@ -123,7 +126,8 @@ async def update_task(task_id: str, form: EditTaskForm, db: AsyncSession = Depen
 
 
 @app.get('/api/task/{task_id}')
-async def task_details(task_id: str, db: AsyncSession = Depends(get_session), credentials: HTTPBasicCredentials = Depends(security)):
+async def task_details(task_id: str, db: AsyncSession = Depends(get_session),
+                       credentials: HTTPBasicCredentials = Depends(security)):
     """
     获取任务详情
     """
@@ -135,7 +139,7 @@ async def task_details(task_id: str, db: AsyncSession = Depends(get_session), cr
 
 @app.post('/api/repassword', response_model=BaseResponse)
 async def change_my_password(form: ChangePasswordForm, db: AsyncSession = Depends(get_session),
-                      credentials: HTTPBasicCredentials = Depends(security)):
+                             credentials: HTTPBasicCredentials = Depends(security)):
     """
     修改密码
     """
@@ -170,4 +174,32 @@ async def task_daily_window_csv(task_id: str, date: str, idx: str):
     获取任务每个window的CSV
     """
     return StreamingResponse(task_daily_window_csv_file(task_id, date, idx), media_type="text/csv")
+
+
+@app.post('/api/task/{task_id}/share', response_model=TaskShareResponse)
+async def get_task_share_code(task_id: str, db: AsyncSession = Depends(get_session),
+                              credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    获取导入的code
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    code = await fork_task_request(db, account, task_id)
+    if not code:
+        return HTTPException(status_code=404, detail="任务不存在")
+    return TaskShareResponse(code=code)
+
+
+@app.post('/api/import')
+async def import_task_by_code(form: TaskImportForm, db: AsyncSession = Depends(get_session),
+                              credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    根据code，导入任务
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    await fork_task_execute(db, account, form.code)
+    return BaseResponse(code=200)
 

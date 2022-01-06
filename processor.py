@@ -1,14 +1,18 @@
 # coding: utf-8
 
 import io
+import random
+import shutil
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy_sugar import select, delete
 
 from config import STATIC_BASE
 from database import SyncDbWrapper
 from forms import TaskForm, TaskItem, EditTaskForm, DetailResponse, ResultItem, WindowItem
-from models import ExecutionTask, Account, ExecutionResult, DataWindow
+from models import ExecutionTask, Account, ExecutionResult, DataWindow, ShareRequest
 from uuid import UUID
+
+from utilities.data_processor import date_range
 
 
 async def add_new_task(db: AsyncSession, form: TaskForm, user: Account):
@@ -184,4 +188,88 @@ def task_daily_window_csv_file(task_id: str, date: str, idx: str):
     """
     with open(fr'{STATIC_BASE}/window/{task_id}-{date}-{idx}.csv', 'rb') as f:
         return io.BytesIO(f.read())
+
+
+async def fork_task_request(db: AsyncSession, user: Account, task_id: str):
+    """
+    复制任务
+    """
+    for i in range(100):
+        code = "".join(random.sample('qazxswedcvfrtgbnhyujmkiolp1234567890QAZXSWEDCVFRTGBNHYUJMKIOLP', 6))
+        if list(await select(ShareRequest).where(ShareRequest.code == code).scalars(db)):
+            continue
+        task = await db.get(ExecutionTask, UUID(task_id))
+        db.add(ShareRequest(accountId=user.id, taskId=task.id, resultId=task.resultId, code=code))
+        await db.flush()
+        return code
+
+
+async def fork_task_execute(db: AsyncSession, user: Account, code: str):
+    """
+    执行复制任务
+    """
+    for shareRequest in await select(ShareRequest).where(ShareRequest.code == code).scalars(db):
+        task = await db.get(ExecutionTask, shareRequest.taskId)
+        result = await db.get(ExecutionResult, shareRequest.resultId)
+        newTask = ExecutionTask(
+            accountId=user.id,
+            product=task.product,
+            startDate=task.startDate,
+            endDate=task.endDate,
+            increment=task.increment,
+            windowSize=task.windowSize,
+            windowUnit=task.windowUnit,
+            percentage=100
+        )
+        db.add(newTask)
+        await db.flush()
+        newResult = ExecutionResult(
+            accountId=user.id,
+            taskId=newTask.id,
+            windowCount=result.windowCount,
+            successCount=result.successCount,
+            eslapshed=result.eslapshed
+        )
+        db.add(newResult)
+        await db.flush()
+        dates = date_range(task.startDate, task.endDate)
+        for date_str in dates:
+            from_path = fr'{STATIC_BASE}/day/{task.id}-{date_str}.jpg'
+            to_path = fr'{STATIC_BASE}/day/{newTask.id}-{date_str}.jpg'
+            shutil.copyfile(from_path, to_path)
+        idx = 0
+        for dataWindow in await select(DataWindow).where(
+                DataWindow.taskId == task.id, DataWindow.resultId == result.id).scalars(db):
+            db.add(
+                DataWindow(
+                    accountId=user.id,
+                    taskId=newTask.id,
+                    resultId=newResult.id,
+                    date=dataWindow.date,
+                    file_path=dataWindow.file_path,
+                    startIdx=dataWindow.startIdx,
+                    startTs=dataWindow.startTs,
+                    startVal=dataWindow.startVal,
+                    firstIdx=dataWindow.firstIdx,
+                    firstVal=dataWindow.firstVal,
+                    firstTs=dataWindow.firstTs,
+                    highestIdx=dataWindow.highestIdx,
+                    highestVal=dataWindow.highestVal,
+                    highestTs=dataWindow.highestTs,
+                    lastIdx=dataWindow.lastIdx,
+                    lastVal=dataWindow.lastVal,
+                    lastTs=dataWindow.lastTs,
+                )
+            )
+            csv_from_path = fr'{STATIC_BASE}/window/{task.id}-{dataWindow.date}-{idx}.csv'
+            img_from_path = fr'{STATIC_BASE}/window/{task.id}-{dataWindow.date}-{idx}.jpg'
+            csv_to_path = fr'{STATIC_BASE}/window/{newTask.id}-{dataWindow.date}-{idx}.csv'
+            img_to_path = fr'{STATIC_BASE}/window/{newTask.id}-{dataWindow.date}-{idx}.jpg'
+            shutil.copyfile(csv_from_path, csv_to_path)
+            shutil.copyfile(img_from_path, img_to_path)
+        newTask.resultId = newResult.id
+        await db.delete(shareRequest)
+        await db.flush()
+        return
+
 

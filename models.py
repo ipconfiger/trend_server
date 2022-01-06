@@ -76,6 +76,12 @@ class DataWindow(Base):
     lastTs = Column(BigInteger, nullable=False, server_default='0')
 
 
+class ShareRequest(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    taskId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    resultId = Column(UUID(as_uuid=True), index=True, nullable=True)
+    code = Column(String(6), unique=True)
+
 
 
 

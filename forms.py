@@ -3,6 +3,10 @@ from typing import List
 from pydantic import BaseModel, Field
 
 
+class TaskImportForm(BaseModel):
+    code: str
+
+
 class TaskForm(BaseModel):
     product: str
     startDate: str
@@ -35,6 +39,10 @@ class TaskItem(BaseModel):
 
 class TaskResponse(BaseModel):
     tasks: List[TaskItem]
+
+
+class TaskShareResponse(BaseModel):
+    code: str
 
 
 class LoginForm(BaseModel):
