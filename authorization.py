@@ -83,9 +83,9 @@ async def change_password(db: AsyncSession, user: Account, form: ChangePasswordF
         return False
 
 
-async def reset_password(user_name:str):
+async def reset_password(user_name: str):
     async with DbWrapper() as db:
-        for account in select(Account).where(Account.loginId == user_name).scalars(db):
+        for account in await select(Account).where(Account.loginId == user_name).scalars(db):
             account.password = gen_password('123')
             await db.flush()
     print('Done!')
