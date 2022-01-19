@@ -130,6 +130,14 @@ async def execute_task(db: AsyncSession, user: Account, task_id: str):
     task.percentage = 0
 
 
+async def execute_all_task(db: AsyncSession, user: Account):
+    for task in await select(ExecutionTask).where(
+            ExecutionTask.accountId == user.id
+    ).scalars(db):
+        task.processing = True
+        task.percentage = 0
+
+
 async def delete_exist_task(db: AsyncSession, user: Account, task_id: str):
     """
     移除任务

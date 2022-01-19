@@ -17,7 +17,7 @@ from forms import LoginResponse, LoginForm, TaskResponse, TaskForm, BaseResponse
     TaskShareResponse, TaskImportForm
 from processor import add_new_task, task_list, execute_task, delete_exist_task, edit_task_by_id, task_details_by_id, \
     task_daily_image_file, task_daily_window_image_file, task_daily_window_csv_file, fork_task_request, \
-    fork_task_execute
+    fork_task_execute, execute_all_task
 
 app = FastAPI()
 security = HTTPBasic()
@@ -189,6 +189,20 @@ async def get_task_share_code(task_id: str, db: AsyncSession = Depends(get_sessi
     if not code:
         return HTTPException(status_code=404, detail="任务不存在")
     return TaskShareResponse(code=code)
+
+
+@app.post('/api/task/start_all')
+async def start_all_process(db: AsyncSession = Depends(get_session),
+                            credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    开始所有的任务
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    await execute_all_task(db, account)
+    return BaseResponse(code=200)
+
 
 
 @app.post('/api/import')
