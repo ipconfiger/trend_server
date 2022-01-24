@@ -9,6 +9,7 @@ import matplotlib.colors as mcolors
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import DATA_BASE, STATIC_BASE
+from forms import Params
 from models import ExecutionTask, ExecutionResult, DataWindow
 
 
@@ -249,7 +250,15 @@ def save_window(db: AsyncSession, task: ExecutionTask, window: Window, result: E
     db.add(dataWindow)
 
 
-def proccess_oneday(taskId, data, date, increment: int, window_size: int, window_unit: str):
+def proccess_oneday(taskId, data, date, taskType: int, paramString: str):
+    paramTypes = {0: Params}
+    params = paramTypes[taskType].parse_raw(paramString)
+    if taskType == 0:
+        return process_base_oneday(taskId, data, date, params)
+
+
+def process_base_oneday(taskId, data, date, params: Params):
+    increment, window_size, window_unit = params.increment, params.windowSize, params.windowUnit
     result = Result()
     arr = []
     for idx, r in enumerate(data):

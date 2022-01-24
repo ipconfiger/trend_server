@@ -40,12 +40,38 @@ class ExecutionTask(Base):
     product = Column(String(36), nullable=False)
     startDate = Column(String(10), nullable=False)
     endDate = Column(String(10), nullable=False)
-    increment = Column(SmallInteger, nullable=False)
-    windowSize = Column(SmallInteger, nullable=False)
-    windowUnit = Column(String(1), nullable=False)
+    # increment = Column(SmallInteger, nullable=False)
+    # windowSize = Column(SmallInteger, nullable=False)
+    # windowUnit = Column(String(1), nullable=False)
+    taskType = Column(SmallInteger, nullable=False, server_default='0')
     processing = Column(Boolean, nullable=False, server_default='0')
     percentage = Column(SmallInteger, nullable=False, server_default='0')
     resultId = Column(UUID(as_uuid=True), nullable=True)
+    params = Column(Text)
+
+
+class SavedTask(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    product = Column(String(36), nullable=False)
+    startDate = Column(String(10), nullable=False)
+    endDate = Column(String(10), nullable=False)
+    taskType = Column(SmallInteger, nullable=False, server_default='0')
+    processing = Column(Boolean, nullable=False, server_default='0')
+    percentage = Column(SmallInteger, nullable=False, server_default='0')
+    resultId = Column(UUID(as_uuid=True), nullable=True)
+    params = Column(Text)
+
+
+class KeptTask(Base):
+    accountId = Column(UUID(as_uuid=True), index=True, nullable=False)
+    product = Column(String(36), nullable=False)
+    startDate = Column(String(10), nullable=False)
+    endDate = Column(String(10), nullable=False)
+    taskType = Column(SmallInteger, nullable=False, server_default='0')
+    processing = Column(Boolean, nullable=False, server_default='0')
+    percentage = Column(SmallInteger, nullable=False, server_default='0')
+    resultId = Column(UUID(as_uuid=True), nullable=True)
+    params = Column(Text)
 
 
 class ExecutionResult(Base):

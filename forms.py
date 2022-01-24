@@ -11,17 +11,14 @@ class TaskForm(BaseModel):
     product: str
     startDate: str
     endDate: str
-    increment: int
-    windowSize: int
-    windowUnit: str
+    taskType: int
+    params: str
 
 
 class EditTaskForm(BaseModel):
     startDate: str
     endDate: str
-    increment: int
-    windowSize: int
-    windowUnit: str
+    params: str
 
 
 class TaskItem(BaseModel):
@@ -29,9 +26,8 @@ class TaskItem(BaseModel):
     product: str
     startDate: str
     endDate: str
-    increment: int
-    windowSize: int
-    windowUnit: str
+    taskType: int
+    params: str
     processing: bool
     percentage: int
     resultId: str = Field('')
@@ -97,3 +93,9 @@ class ResultItem(BaseModel):
 class DetailResponse(BaseResponse):
     task: TaskItem
     result: ResultItem
+
+
+class Params(BaseResponse):
+    increment: int
+    windowSize: int
+    windowUnit: str

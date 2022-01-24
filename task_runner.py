@@ -50,7 +50,7 @@ def execution(task: ExecutionTask):
                 db.commit()
                 print('exit task execution')
                 return
-            result = proccess_oneday(task.id, data, date_str, task.increment, task.windowSize, task.windowUnit)
+            result = proccess_oneday(task.id, data, date_str, task.taskType, task.params)
             executionResult.windowCount = executionResult.windowCount + result.windowCount
             executionResult.successCount = executionResult.successCount + result.successCount
             for window in result.windows:

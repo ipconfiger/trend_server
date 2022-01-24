@@ -23,9 +23,8 @@ async def add_new_task(db: AsyncSession, form: TaskForm, user: Account):
                          product=form.product,
                          startDate=form.startDate,
                          endDate=form.endDate,
-                         increment=form.increment,
-                         windowSize=form.windowSize,
-                         windowUnit=form.windowUnit))
+                         taskType=form.taskType,
+                         params=form.params))
     await db.flush()
     return await task_list(db, user)
 
@@ -113,8 +112,7 @@ async def task_list(db: AsyncSession, user: Account):
     ).order_by(ExecutionTask.create_ts.desc()).scalars(db):
         task_items.append(
             TaskItem(taskId='%s' % task.id, product=task.product, startDate=task.startDate, endDate=task.endDate,
-                     increment=task.increment,
-                     windowSize=task.windowSize, windowUnit=task.windowUnit, processing=task.processing,
+                     taskType=task.taskType or 0, params=task.params or '{}', processing=task.processing,
                      percentage=task.percentage, resultId=await fromatResult(db, task)))
     return task_items
 
