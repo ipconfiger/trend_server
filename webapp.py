@@ -17,7 +17,7 @@ from forms import LoginResponse, LoginForm, TaskResponse, TaskForm, BaseResponse
     TaskShareResponse, TaskImportForm
 from processor import add_new_task, task_list, execute_task, delete_exist_task, edit_task_by_id, task_details_by_id, \
     task_daily_image_file, task_daily_window_image_file, task_daily_window_csv_file, fork_task_request, \
-    fork_task_execute, execute_all_task
+    fork_task_execute, execute_all_task, save_task, pause_task, saved_list, paused_list
 
 app = FastAPI()
 security = HTTPBasic()
@@ -83,7 +83,9 @@ async def tasks(db: AsyncSession = Depends(get_session),
     if account is None:
         raise HTTPException(status_code=403)
     tasks = await task_list(db, account)
-    return TaskResponse(tasks=tasks)
+    saved = await saved_list(db, account)
+    kept = await paused_list(db, account)
+    return TaskResponse(tasks=tasks, saved=saved, kept=kept)
 
 
 @app.post('/api/task/{task_id}/run', response_model=BaseResponse)
@@ -204,7 +206,6 @@ async def start_all_process(db: AsyncSession = Depends(get_session),
     return BaseResponse(code=200)
 
 
-
 @app.post('/api/import')
 async def import_task_by_code(form: TaskImportForm, db: AsyncSession = Depends(get_session),
                               credentials: HTTPBasicCredentials = Depends(security)):
@@ -217,3 +218,28 @@ async def import_task_by_code(form: TaskImportForm, db: AsyncSession = Depends(g
     await fork_task_execute(db, account, form.code)
     return BaseResponse(code=200)
 
+
+@app.post('/api/task/{task_id}/save')
+async def save_task_by_id(task_id: str, db: AsyncSession = Depends(get_session),
+                          credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    保存指定ID的任务
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    await save_task(db, task_id, account)
+    return BaseResponse(code=200)
+
+
+@app.post('/api/task/{task_id}/pause')
+async def pause_task_by_id(task_id: str, db: AsyncSession = Depends(get_session),
+                           credentials: HTTPBasicCredentials = Depends(security)):
+    """
+    保存指定ID的任务
+    """
+    account = await check_token(db, credentials.password)
+    if account is None:
+        raise HTTPException(status_code=403)
+    await pause_task(db, task_id, account)
+    return BaseResponse(code=200)

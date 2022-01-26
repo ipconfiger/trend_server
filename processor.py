@@ -9,7 +9,7 @@ from sqlalchemy_sugar import select, delete
 from config import STATIC_BASE
 from database import SyncDbWrapper
 from forms import TaskForm, TaskItem, EditTaskForm, DetailResponse, ResultItem, WindowItem
-from models import ExecutionTask, Account, ExecutionResult, DataWindow, ShareRequest
+from models import ExecutionTask, Account, ExecutionResult, DataWindow, ShareRequest, SavedTask, KeptTask
 from uuid import UUID
 
 from utilities.data_processor import date_range
@@ -38,9 +38,37 @@ async def edit_task_by_id(db: AsyncSession, task_id: str, form: EditTaskForm, us
         return
     executionTask.startDate = form.startDate
     executionTask.endDate = form.endDate
-    executionTask.increment = int(form.increment)
-    executionTask.windowSize = int(form.windowSize)
-    executionTask.windowUnit = form.windowUnit
+    executionTask.params = form.params
+    await db.flush()
+
+
+async def save_task(db: AsyncSession, task_id: str, user: Account):
+    """
+    保存任务到保存列表
+    """
+    executionTask = await db.get(ExecutionTask, UUID(task_id))
+    if executionTask.accountId != user.id:
+        return
+    savedTask = SavedTask(accountId=user.id, product=executionTask.product, startDate=executionTask.startDate,
+                          endDate=executionTask.endDate, taskType=executionTask.taskType,
+                          resultId=executionTask.resultId, params=executionTask.params)
+    db.add(savedTask)
+    await db.delete(executionTask)
+    await db.flush()
+
+
+async def pause_task(db: AsyncSession, task_id: str, user: Account):
+    """
+    保存任务到暂存列表
+    """
+    executionTask = await db.get(ExecutionTask, UUID(task_id))
+    if executionTask.accountId != user.id:
+        return
+    keptTask = KeptTask(accountId=user.id, product=executionTask.product, startDate=executionTask.startDate,
+                          endDate=executionTask.endDate, taskType=executionTask.taskType,
+                          resultId=executionTask.resultId, params=executionTask.params)
+    db.add(keptTask)
+    await db.delete(executionTask)
     await db.flush()
 
 
@@ -49,6 +77,12 @@ async def task_details_by_id(db: AsyncSession, task_id: str):
      任务详情
     """
     task = await db.get(ExecutionTask, UUID(task_id))
+    saved = False
+    if task is None:
+        task = await db.get(SavedTask, UUID(task_id))
+        if task:
+            saved = True
+
     executionResult = await db.get(ExecutionResult, task.resultId)
     windows = await select(DataWindow).where(DataWindow.resultId == executionResult.id).scalars(db)
     return DetailResponse(code=200, task=TaskItem(
@@ -56,11 +90,10 @@ async def task_details_by_id(db: AsyncSession, task_id: str):
         product=task.product,
         startDate=task.startDate,
         endDate=task.endDate,
-        increment=task.increment,
-        windowSize=task.windowSize,
-        windowUnit=task.windowUnit,
-        processing=task.processing,
-        percentage=task.percentage,
+        taskType=task.taskType,
+        params=task.params,
+        processing=False if saved else task.processing,
+        percentage=0 if saved else task.percentage,
         resultId=''
     ), result=ResultItem(
         windowCount=executionResult.windowCount,
@@ -114,6 +147,36 @@ async def task_list(db: AsyncSession, user: Account):
             TaskItem(taskId='%s' % task.id, product=task.product, startDate=task.startDate, endDate=task.endDate,
                      taskType=task.taskType or 0, params=task.params or '{}', processing=task.processing,
                      percentage=task.percentage, resultId=await fromatResult(db, task)))
+    return task_items
+
+
+async def saved_list(db: AsyncSession, user: Account):
+    """
+    已保存任务列表
+    """
+    task_items = []
+    for task in await select(SavedTask).where(
+            SavedTask.accountId == user.id
+    ).order_by(SavedTask.create_ts.desc()).scalars(db):
+        task_items.append(
+            TaskItem(taskId='%s' % task.id, product=task.product, startDate=task.startDate, endDate=task.endDate,
+                     taskType=task.taskType or 0, params=task.params or '{}', processing=False,
+                     percentage=0, resultId=str(task.resultId)))
+    return task_items
+
+
+async def paused_list(db: AsyncSession, user: Account):
+    """
+    已暂存任务列表
+    """
+    task_items = []
+    for task in await select(KeptTask).where(
+            KeptTask.accountId == user.id
+    ).order_by(KeptTask.create_ts.desc()).scalars(db):
+        task_items.append(
+            TaskItem(taskId='%s' % task.id, product=task.product, startDate=task.startDate, endDate=task.endDate,
+                     taskType=task.taskType or 0, params=task.params or '{}', processing=False,
+                     percentage=0, resultId=str(task.resultId)))
     return task_items
 
 

@@ -56,8 +56,6 @@ class SavedTask(Base):
     startDate = Column(String(10), nullable=False)
     endDate = Column(String(10), nullable=False)
     taskType = Column(SmallInteger, nullable=False, server_default='0')
-    processing = Column(Boolean, nullable=False, server_default='0')
-    percentage = Column(SmallInteger, nullable=False, server_default='0')
     resultId = Column(UUID(as_uuid=True), nullable=True)
     params = Column(Text)
 
@@ -68,8 +66,6 @@ class KeptTask(Base):
     startDate = Column(String(10), nullable=False)
     endDate = Column(String(10), nullable=False)
     taskType = Column(SmallInteger, nullable=False, server_default='0')
-    processing = Column(Boolean, nullable=False, server_default='0')
-    percentage = Column(SmallInteger, nullable=False, server_default='0')
     resultId = Column(UUID(as_uuid=True), nullable=True)
     params = Column(Text)
 

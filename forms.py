@@ -34,7 +34,9 @@ class TaskItem(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    tasks: List[TaskItem]
+    tasks: List[TaskItem] = Field([], title="可执行任务")
+    saved: List[TaskItem] = Field([], title="已保存任务")
+    kept: List[TaskItem] = Field([], title="废件箱")
 
 
 class TaskShareResponse(BaseModel):
@@ -95,7 +97,7 @@ class DetailResponse(BaseResponse):
     result: ResultItem
 
 
-class Params(BaseResponse):
+class Params(BaseModel):
     increment: int
     windowSize: int
     windowUnit: str

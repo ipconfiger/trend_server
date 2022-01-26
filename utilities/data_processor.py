@@ -252,6 +252,7 @@ def save_window(db: AsyncSession, task: ExecutionTask, window: Window, result: E
 
 def proccess_oneday(taskId, data, date, taskType: int, paramString: str):
     paramTypes = {0: Params}
+    print(f'param: {paramString}')
     params = paramTypes[taskType].parse_raw(paramString)
     if taskType == 0:
         return process_base_oneday(taskId, data, date, params)
@@ -300,11 +301,11 @@ def process_base_oneday(taskId, data, date, params: Params):
 
 
 def init_plt():
-    plt.figure(figsize=(45, 10), dpi=80)
+    plt.figure(figsize=(45, 10), dpi=40)
 
 
 def init_plt2():
-    plt.figure(figsize=(30, 8), dpi=80)
+    plt.figure(figsize=(30, 8), dpi=40)
 
 
 def reinit_plt(sub=False):
@@ -322,7 +323,7 @@ def main():
     date = '2021-12-18'
     path = '/Users/alex/Projects/temp/trend_data/data/' + data_file_path('ZEC-USDT', date)
     data = np.load(path)
-    proccess_oneday('testId', data, date, 2, 60, 'm')
+    proccess_oneday('testId', data, date, 0, '')
 
 
 if __name__ == "__main__":
