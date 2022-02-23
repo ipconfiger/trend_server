@@ -101,3 +101,11 @@ class Params(BaseModel):
     increment: int
     windowSize: int
     windowUnit: str
+
+
+class MACDParams(BaseModel):
+    windowSize: int
+    smooth: int
+    high: int
+    low: int
+

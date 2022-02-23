@@ -2,6 +2,7 @@ import datetime
 import os
 
 import numpy as np
+import pandas as pd
 from typing import List
 from decimal import Decimal
 from matplotlib import pyplot as plt
@@ -9,7 +10,7 @@ import matplotlib.colors as mcolors
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import DATA_BASE, STATIC_BASE
-from forms import Params
+from forms import Params, MACDParams
 from models import ExecutionTask, ExecutionResult, DataWindow
 
 
@@ -251,14 +252,51 @@ def save_window(db: AsyncSession, task: ExecutionTask, window: Window, result: E
 
 
 def proccess_oneday(taskId, data, date, taskType: int, paramString: str):
-    paramTypes = {0: Params}
+    paramTypes = {0: Params, 1: MACDParams}
     print(f'param: {paramString}')
     params = paramTypes[taskType].parse_raw(paramString)
     if taskType == 0:
         return process_base_oneday(taskId, data, date, params)
+    if taskType == 1:
+        return process_macd_one_day(taskId, data, date, params)
+
+
+def calculate_ema(prices, days, smoothing=2):
+    ema = [sum(prices[:days]) / days]
+    for price in prices[days:]:
+        ema.append((price * (smoothing / (1 + days))) + ema[-1] * (1 - (smoothing / (1 + days))))
+    return ema
+
+
+def process_macd_one_day(data, params: MACDParams):
+    """
+    处理MACD条件：1天
+    """
+    arr = []
+    current_ts = 0
+    buffer = []
+    for idx, r in enumerate(data):
+        ts = int(r[-1])
+        v = Decimal(r[2])
+        if current_ts < 1:
+            buffer.append((ts, v))
+            current_ts = ts
+        else:
+            # print(f'diff: {ts - current_ts} ts:{ts} current_ts:{current_ts}')
+            if ts - current_ts > params.windowSize * 60000:
+                buffer.append((ts, v))
+                arr.append(buffer[-1])
+                del buffer[:]
+                current_ts = ts
+            else:
+                buffer.append((ts, v))
+    return arr
 
 
 def process_base_oneday(taskId, data, date, params: Params):
+    """
+    处理基础条件：1天
+    """
     increment, window_size, window_unit = params.increment, params.windowSize, params.windowUnit
     result = Result()
     arr = []
@@ -318,12 +356,34 @@ def reinit_plt(sub=False):
         init_plt()
 
 
+def process_macd(data_arr, executionResult: ExecutionResult):
+    df = pd.DataFrame({'ts': [ts for ts, _ in data_arr], 'val': [val for _, val in data_arr]})
+    k = df['val'].ewm(span=12, adjust=False, min_periods=12).mean()
+    d = df['val'].ewm(span=26, adjust=False, min_periods=26).mean()
+    macd = k - d
+    macd_s = macd.ewm(span=9, adjust=False, min_periods=9).mean()
+    macd_h = macd - macd_s
+    df['macd'] = df.index.map(macd)
+    df['macd_h'] = df.index.map(macd_h)
+    df['macd_s'] = df.index.map(macd_s)
+    # View our data
+    pd.set_option("display.max_columns", None)
+    df.to_excel(os.path.join(STATIC_BASE, 'MACD', f'excel_{executionResult.id}.xlsx'))
+
+
 def main():
     plt.figure(figsize=(45, 10), dpi=80)
-    date = '2021-12-18'
-    path = '/Users/alex/Projects/temp/trend_data/data/' + data_file_path('ZEC-USDT', date)
-    data = np.load(path)
-    proccess_oneday('testId', data, date, 0, '')
+    dates = ['2022-01-13', '2022-01-14', '2022-01-15']
+    data_arr = []
+    for date in dates:
+        path = '/Users/alex/Projects/temp/trend_data/data/' + data_file_path('ZEC-USDT', date)
+        data = np.load(path)
+        # proccess_oneday('testId', data, date, 0, '')
+        for item in process_macd_one_day(data, MACDParams(windowSize=5, smooth=2, high=0, low=0)):
+            data_arr.append(item)
+
+    print("items count:%s" % len(data_arr))
+    process_macd(data_arr)
 
 
 if __name__ == "__main__":
